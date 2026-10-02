@@ -1,0 +1,129 @@
+#include <Servo.h>
+
+const int LED_PIN = 9;
+const int SERVO_PIN = 10;
+
+Servo wingServo;
+
+// サーボの基準位置
+const int WING_CENTER = 30;
+
+// ゆっくり動かす
+void moveServoSlow(int fromAngle, int toAngle, int stepDelay) {
+
+  if (fromAngle < toAngle) {
+
+    for (int angle = fromAngle; angle <= toAngle; angle++) {
+      wingServo.write(angle);
+      delay(stepDelay);
+    }
+
+  } else {
+
+    for (int angle = fromAngle; angle >= toAngle; angle--) {
+      wingServo.write(angle);
+      delay(stepDelay);
+    }
+  }
+}
+
+
+// LEDを魔法のように点灯
+void lightUpMagic() {
+
+  // 徐々に明るく
+  for (int brightness = 0; brightness <= 255; brightness += 5) {
+    analogWrite(LED_PIN, brightness);
+    delay(30);
+  }
+
+  // 最大輝度
+  delay(500);
+
+  // 少し暗くする
+  for (int brightness = 255; brightness >= 180; brightness -= 3) {
+    analogWrite(LED_PIN, brightness);
+    delay(20);
+  }
+
+  // このあと180で持続点灯
+}
+
+
+// 最初の2回のゆっくりした羽ばたき
+void awakeningWings() {
+
+  for (int i = 0; i < 2; i++) {
+
+    // -30° → 60°
+    moveServoSlow(0, 90, 20);
+
+    delay(300);
+
+    // 60° → -30°
+    moveServoSlow(90, 0, 20);
+
+    delay(300);
+  }
+}
+
+
+// 本格的な羽ばたき
+void flapWings() {
+
+  while (true) {
+
+    // -45° → 60°
+    moveServoSlow(0, 90, 8);
+
+    // 60° → -45°
+    moveServoSlow(90, 0, 8);
+
+    // 少し休む
+    delay(100);
+  }
+}
+
+
+void setup() {
+
+  Serial.begin(9600);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  wingServo.attach(SERVO_PIN);
+
+  // 初期状態
+  analogWrite(LED_PIN, 0);
+  wingServo.write(0);
+}
+
+
+void loop() {
+
+  if (Serial.available() > 0) {
+
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+
+    if (command == "GO") {
+
+      // =====================================
+      // ① 魔法の光
+      // =====================================
+      lightUpMagic();
+
+
+      // =====================================
+      // ② ファイヤードレイクが目覚める
+      // =====================================
+      awakeningWings();
+
+
+      // =====================================
+      // ③ 羽ばたき開始
+      // =====================================
+      flapWings();
+    }
+  }
+}
